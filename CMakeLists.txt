@@ -26,8 +26,8 @@ if (CMAKE_CXX_COMPILER_ID MATCHES MSVC)
 
 	if (CMAKE_BUILD_TYPE STREQUAL "Release")
 		# Visual Studio performance profiler for Release builds
-		# add_link_options("/PROFILE")
-		# add_compile_options("/Z7")
+		add_link_options("/PROFILE")
+		add_compile_options("/Z7")
 	endif()
 elseif (CMAKE_CXX_COMPILER_ID MATCHES GNU)
     add_compile_options(-Wall)
@@ -52,7 +52,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(SFML)
 
-add_executable(sfml_hello_world src/main.cpp)
+add_executable(sfml_hello_world src/main.cpp "src/pixel.hpp" "src/sfml_window_helpers.cpp")
 
 target_link_libraries(sfml_hello_world PRIVATE sfml-graphics)
 
