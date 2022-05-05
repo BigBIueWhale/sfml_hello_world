@@ -31,7 +31,10 @@ if (CMAKE_CXX_COMPILER_ID MATCHES MSVC)
 	endif()
 elseif (CMAKE_CXX_COMPILER_ID MATCHES GNU)
     add_compile_options(-Wall)
-    add_link_options(-static -static-libgcc -static-libstdc++)
+    if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    else()
+        add_link_options(-static -static-libgcc -static-libstdc++)
+    endif()
 
     # add_compile_options(-ftest-coverage -fprofile-arcs) # gcov
 
