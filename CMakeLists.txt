@@ -4,7 +4,7 @@ set(CMAKE_VERBOSE_MAKEFILE ON)
 
 project(sfml_hello_world LANGUAGES C CXX)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 set(CMAKE_CXX_EXTENSIONS False) # Use -std=c++14 instead of -std=gnu++14
@@ -13,6 +13,7 @@ set(BUILD_SHARED_LIBS OFF)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES MSVC)
     add_compile_definitions(UNICODE _UNICODE)
+    add_compile_definitions(_HAS_AUTO_PTR_ETC=1)
 
     # https://stackoverflow.com/a/56490614
     if (CMAKE_BUILD_TYPE STREQUAL "Release")

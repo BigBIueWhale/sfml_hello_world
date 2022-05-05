@@ -1,6 +1,6 @@
 #pragma once
 
 #include <cstdint>
-#include <vector>
+#include <span>
 
-std::vector<std::uint8_t> load_ariel_from_memory();
+std::span<const std::uint8_t, 367112> load_ariel_from_memory();

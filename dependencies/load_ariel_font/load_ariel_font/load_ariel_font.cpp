@@ -22954,11 +22954,6 @@ namespace
 	};
 }
 
-std::vector<std::uint8_t> load_ariel_from_memory() {
-	std::vector<std::uint8_t> ret;
-	static constexpr std::ptrdiff_t num_bytes_in_font =
-		std::extent<decltype(ariel_font_in_data_segment), 0>::value;
-	ret.resize(num_bytes_in_font);
-	std::memcpy(ret.data(), ariel_font_in_data_segment, num_bytes_in_font);
-	return ret;
+std::span<const std::uint8_t, 367112> load_ariel_from_memory() {
+	return ariel_font_in_data_segment;
 }
