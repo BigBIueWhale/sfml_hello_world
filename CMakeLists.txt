@@ -55,11 +55,11 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(SFML)
 
-add_executable(sfml_hello_world src/main.cpp "src/pixel.hpp" "src/sfml_window_helpers.cpp")
+add_executable(sfml_hello_world src/main.cpp)
 
 target_link_libraries(sfml_hello_world PRIVATE sfml-graphics)
 
-target_include_directories(sfml_hello_world PRIVATE "dependencies/load_ariel_font")
+target_include_directories(sfml_hello_world PRIVATE dependencies/load_ariel_font)
 target_link_libraries(sfml_hello_world PRIVATE load_ariel_font)
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
