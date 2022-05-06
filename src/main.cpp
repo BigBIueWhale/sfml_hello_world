@@ -28,11 +28,11 @@ int main()
         }
     }
 
-    sf::Vector2f center_of_world{ window.getView().getCenter() };
-    sf::Vector2f size_of_world{ window.getSize() };
-    std::optional<sf::Vector2f> mouse_most_recent_time_saw_moving;
+    sf::Vector2i most_recent_window_size{
+        window.getSize()
+    };
+    std::optional<sf::Vector2i> most_recent_left_mouse_button_down_coordinates;
 
-    
     sf::Texture image_texture;
     {
         sf::Image image_from_file;
@@ -58,40 +58,79 @@ int main()
                 }
                 case sf::Event::EventType::Resized:
                 {
+                    const sf::View& previous_view{
+                        window.getView()
+                    };
+                    const sf::Vector2f new_window_size{
+                        static_cast<float>(event.size.width),
+                        static_cast<float>(event.size.height)
+                    };
+                    const sf::Vector2f change_ratio{
+                        new_window_size.x / static_cast<float>(most_recent_window_size.x),
+                        new_window_size.y / static_cast<float>(most_recent_window_size.y)
+                    };
+                    const sf::View new_view{
+                        previous_view.getCenter(),
+                        sf::Vector2f{
+                            previous_view.getSize().x * change_ratio.x,
+                            previous_view.getSize().y * change_ratio.y
+                        }
+                    };
+                    window.setView(new_view);
+                    most_recent_window_size = sf::Vector2i{
+                        window.getSize()
+                    };
                     break;
                 }
                 case sf::Event::EventType::MouseMoved:
                 {
                     if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left)) {
-                        const sf::Vector2f mouse_pos =
-                            window.mapPixelToCoords(sf::Vector2i{ event.mouseMove.x, event.mouseMove.y });
-                        if (mouse_most_recent_time_saw_moving.has_value()) {
-                            const sf::Vector2f change_since_last_time{
-                                mouse_most_recent_time_saw_moving.value() - mouse_pos
+                        const sf::Vector2i mouse_pos{
+                            event.mouseMove.x,
+                            event.mouseMove.y
+                        };
+                        if (most_recent_left_mouse_button_down_coordinates.has_value()) {
+                            const sf::Vector2i change_in_pixels{
+                                mouse_pos - most_recent_left_mouse_button_down_coordinates.value()
                             };
-                            mouse_most_recent_time_saw_moving = std::nullopt;
-                            center_of_world.x += change_since_last_time.x;
-                            center_of_world.y += change_since_last_time.y;
+                            const sf::Vector2f proportion_change{
+                                static_cast<float>(change_in_pixels.x) / window.getSize().x,
+                                static_cast<float>(change_in_pixels.y) / window.getSize().y
+                            };
+                            const sf::Vector2f size_of_world{
+                                window.getView().getSize()
+                            };
+                            const sf::Vector2f change_in_world_coordinates{
+                                proportion_change.x * size_of_world.x,
+                                proportion_change.y * size_of_world.y
+                            };
+                            sf::Vector2f center_of_world{
+                                window.getView().getCenter()
+                            };
+                            center_of_world.x -= change_in_world_coordinates.x;
+                            center_of_world.y -= change_in_world_coordinates.y;
                             window.setView(sf::View{ center_of_world, size_of_world });
                         }
-                        mouse_most_recent_time_saw_moving = mouse_pos;
+                        most_recent_left_mouse_button_down_coordinates = mouse_pos;
                     }
                     else {
-                        mouse_most_recent_time_saw_moving = std::nullopt;
+                        most_recent_left_mouse_button_down_coordinates = std::nullopt;
                     }
                     break;
                 }
                 case sf::Event::EventType::MouseWheelScrolled:
                 {
+                    sf::Vector2f size_of_world{
+                        window.getView().getSize()
+                    };
                     const float factor = std::pow(1.1f, -event.mouseWheelScroll.delta);
                     size_of_world.x *= factor;
                     size_of_world.y *= factor;
+                    window.setView(sf::View{ window.getView().getCenter(), size_of_world });
                     break;
                 }
             }
         };
-
-        window.setView(sf::View{ center_of_world, size_of_world });
 
         // Clear screen
         window.clear();
