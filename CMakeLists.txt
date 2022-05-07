@@ -55,7 +55,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(SFML)
 
-add_executable(sfml_hello_world src/main.cpp)
+add_executable(sfml_hello_world src/main.cpp src/Pixel.hpp)
 
 target_link_libraries(sfml_hello_world PRIVATE sfml-graphics)
 

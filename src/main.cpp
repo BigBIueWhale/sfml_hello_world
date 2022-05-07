@@ -1,22 +1,28 @@
 #include <load_ariel_font/load_ariel_font.hpp>
+#include "Pixel.hpp"
 
 #include <SFML/Audio.hpp>
 #include <SFML/Graphics.hpp>
 
 #include <stdexcept>
+#include <memory>
 #include <vector>
 #include <array>
-#include <chrono>
+#include <initializer_list>
 #include <optional>
-#include <cmath>
+#include <chrono>
+#include <random>
+
 
 int main()
 {
+    //const std::vector<sf::VideoMode>& fullscreen_video_modes = sf::VideoMode::getFullscreenModes();
+
     // Create the main window
     sf::RenderWindow window{
-        sf::VideoMode{ 800, 600, 32 },
+        sf::VideoMode{ 800, 600, 32 }, //fullscreen_video_modes.at(0),
         "SFML window",
-        sf::Style::Default
+        sf::Style::Default //sf::Style::Fullscreen
     };
 
     // Create a graphical text to display
@@ -31,6 +37,14 @@ int main()
     sf::Vector2i most_recent_window_size{
         window.getSize()
     };
+
+    std::optional<std::chrono::steady_clock::time_point> most_recent_time_measurement;
+    long long counter_frames = 0;
+    std::string fps_text;
+
+    const auto random_engine_ptr = std::make_unique<std::mt19937_64>();
+    auto& random_engine = *random_engine_ptr;
+
     std::optional<sf::Vector2i> most_recent_left_mouse_button_down_coordinates;
 
     sf::Texture image_texture;
@@ -41,7 +55,7 @@ int main()
         }
         image_texture.loadFromImage(image_from_file);
     }
-    sf::Sprite image_sprite{ image_texture };
+    const sf::Sprite image_sprite{ image_texture };
 
     // Start the game loop
     while (window.isOpen())
@@ -137,9 +151,108 @@ int main()
 
         window.draw(image_sprite);
 
-        sf::Text text{ "Hello from Ronen", font, 12 };
-        // Draw the string
-        window.draw(text);
+        const sf::Vector2u window_size = window.getSize();
+
+        // Draw individual pixels onto the screen from a CPU-controlled array.
+        {
+            sf::Texture pixels_texture;
+            {
+                sf::Image pixels_image;
+                {
+                    std::vector<Pixel> pixels_rgba(
+                        static_cast<std::ptrdiff_t>(window_size.x) * window_size.y,
+                        Pixel{ 0, 0, 0, 0 }
+                    );
+                    auto get_rand_pixel = [&random_engine]() -> Pixel
+                    {
+                        const std::uniform_int_distribution<int> random_8bit{ 0, 255 };
+                        return Pixel{
+                            static_cast<std::uint8_t>(random_8bit(random_engine)),
+                            static_cast<std::uint8_t>(random_8bit(random_engine)),
+                            static_cast<std::uint8_t>(random_8bit(random_engine)),
+                            40
+                        };
+                    };
+
+                    Pixel pixel_val = get_rand_pixel();
+
+                    for (std::ptrdiff_t idx_row = 0; idx_row < static_cast<std::ptrdiff_t>(window_size.y); ++idx_row) {
+                        if (random_engine() % 30 == 0) {
+                            pixel_val = get_rand_pixel();
+                        }
+                        for (std::ptrdiff_t idx_column = 0; idx_column < static_cast<std::ptrdiff_t>(window_size.x); ++idx_column) {
+                            const auto idx_pixel = idx_row * static_cast<std::ptrdiff_t>(window_size.x) + idx_column;
+                            auto& pixel_ref = pixels_rgba[idx_pixel];
+                            pixel_ref = pixel_val;
+                        }
+                    }
+                    pixels_image.create(window_size.x, window_size.y, view_as_bytes(pixels_rgba).data());
+                }
+                pixels_texture.loadFromImage(pixels_image);
+            }
+            const sf::Sprite pixels_sprite{ pixels_texture };
+            window.draw(pixels_sprite);
+        }
+
+        // Calculate the FPS
+        {
+            const auto time_now = std::chrono::steady_clock::now();
+            ++counter_frames;
+            if (most_recent_time_measurement.has_value())
+            {
+                const auto time_passed = time_now - most_recent_time_measurement.value();
+                if (time_passed >= std::chrono::milliseconds{ 700 }) {
+                    most_recent_time_measurement = time_now;
+                    const std::chrono::nanoseconds time_passed_nanoseconds = time_passed;
+                    const double time_passed_seconds = time_passed_nanoseconds.count() / 1e9;
+                    {
+                        std::ostringstream string_builder;
+                        string_builder << "FPS: " << counter_frames / time_passed_seconds;
+                        fps_text = string_builder.str();
+                    }
+                    counter_frames = 0;
+                }
+            }
+            else {
+                most_recent_time_measurement = time_now;
+            }
+        }
+
+        // Draw the FPS text on the screen
+        {
+            const sf::View dragged_view = window.getView();
+            window.setView(sf::View{
+                sf::FloatRect{
+                    0,
+                    0,
+                    static_cast<float>(window.getSize().x),
+                    static_cast<float>(window.getSize().y)
+                }
+                });
+            const sf::Text text{ fps_text, font, 12 };
+            // Draw the string
+            window.draw(text);
+            window.setView(dragged_view);
+        }
+
+        // Draw lines on the screen using the GPU
+        {
+            auto get_random_vertex = [&random_engine, window_size = window.getSize()]() -> sf::Vertex
+            {
+                const sf::Color line_color{ 0xff, 0x00, 0x00 };
+                const std::uniform_real_distribution<float> rand_x{ 0.0f, static_cast<float>(window_size.x - 1) };
+                const std::uniform_real_distribution<float> rand_y{ 0.0f, static_cast<float>(window_size.y - 1) };
+                return sf::Vertex{
+                    sf::Vector2f{ rand_x(random_engine), rand_y(random_engine) },
+                    line_color
+                };
+            };
+            const auto line = std::make_unique<std::array<sf::Vertex, 69>>();
+            for (sf::Vertex& vertex : *line) {
+                vertex = get_random_vertex();
+            }
+            window.draw(line->data(), line->size(), sf::Lines);
+        }
 
         // Update the window
         window.display();
