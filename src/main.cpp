@@ -56,7 +56,7 @@ int main()
         image_texture.loadFromImage(image_from_file);
     }
     const sf::Sprite image_sprite{ image_texture };
-
+	
     // Start the game loop
     while (window.isOpen())
     {
@@ -146,6 +146,10 @@ int main()
             }
         };
 
+        if (!window.isOpen()) {
+            break;
+        }
+		
         // Clear screen
         window.clear();
 
